@@ -61,6 +61,7 @@ class restore_forum_activity_structure_step extends restore_activity_structure_s
 
         $data->assesstimestart = $this->apply_date_offset($data->assesstimestart);
         $data->assesstimefinish = $this->apply_date_offset($data->assesstimefinish);
+        $data->duedate = $this->apply_date_offset($data->duedate);
         if ($data->scale < 0) { // scale found, get mapping
             $data->scale = -($this->get_mappingid('scale', abs($data->scale)));
         }
