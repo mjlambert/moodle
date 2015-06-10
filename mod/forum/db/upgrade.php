@@ -258,6 +258,30 @@ function xmldb_forum_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2015061000, 'forum');
     }
 
+    if ($oldversion < 2015061001) {
+
+        $table = new xmldb_table('forum');
+        // Define field duedateenabled to be added to forum.
+        $field = new xmldb_field('duedateenabled', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'duedate');
+
+        // Conditionally launch add field duedateenabled.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field duedateevent to be added to forum.
+        $field = new xmldb_field('duedateevent', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'duedateenabled');
+
+        // Conditionally launch add field duedateevent.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Forum savepoint reached.
+        upgrade_mod_savepoint(true, 2015061001, 'forum');
+    }
+
+
 
     return true;
 }
