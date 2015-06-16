@@ -26,6 +26,7 @@ defined('MOODLE_INTERNAL') || die();
 require_once(__DIR__ . '/deprecatedlib.php');
 require_once($CFG->libdir.'/filelib.php');
 require_once($CFG->libdir.'/eventslib.php');
+require_once($CFG->dirroot.'/calendar/lib.php');
 
 /// CONSTANTS ///////////////////////////////////////////////////////////
 
@@ -77,7 +78,7 @@ if (!defined('FORUM_CRON_USER_CACHE')) {
  * @return int intance id
  */
 function forum_add_instance($forum, $mform = null) {
-    global $CFG, $DB;
+    global $CFG, $DB, $USER;
 
     $forum->timemodified = time();
 
@@ -88,6 +89,27 @@ function forum_add_instance($forum, $mform = null) {
     if (empty($forum->ratingtime) or empty($forum->assessed)) {
         $forum->assesstimestart  = 0;
         $forum->assesstimefinish = 0;
+    }
+
+    // If due date is enabled, create a calendar event for it
+    if ($forum->duedateenabled) {
+
+        $event                  = new stdClass();
+        $event->name            = $forum->name;
+        $event->courseid        = $forum->course;
+        $event->groupid         = 0;
+        $event->userid          = -1;
+        $event->timestart       = $forum->duedate;
+        $event->description     = $forum->intro;
+        $event->timeduration    = 0;
+        $event->repeat          = 0;
+        $event->repeats         = 0;
+        $event->eventtype       = 'course';
+
+        $new_event = \calendar_event::create($event);
+        if ($new_event) {
+            $forum->duedateevent = $new_event->id;
+        }
     }
 
     $forum->id = $DB->insert_record('forum', $forum);
@@ -167,6 +189,43 @@ function forum_update_instance($forum, $mform) {
     }
 
     $oldforum = $DB->get_record('forum', array('id'=>$forum->id));
+
+    if ($forum->duedateenabled) {
+        // If we already have an event for the due date, update it
+        if ($oldforum->duedateevent != 0) {
+            $event = \calendar_event::load($oldforum->duedateevent);
+            $event->update(array('timestart' => $forum->duedate));
+        }
+        // If we don't have an event for the due date, create one
+        else {
+            $event                  = new stdClass();
+            $event->name            = $forum->name;
+            $event->courseid        = $forum->course;
+            $event->groupid         = 0;
+            $event->userid          = -1;
+            $event->timestart       = $forum->duedate;
+            $event->description     = $forum->intro;
+            $event->timeduration    = 0;
+            $event->repeat          = 0;
+            $event->repeats         = 0;
+            $event->eventtype       = 'course';
+    
+            $new_event = \calendar_event::create($event);
+            if ($new_event) {
+                $forum->duedateevent = $new_event->id;
+            }
+        }
+    }
+    // If due date is not enabled and we have an event for it, delete the event
+    else {
+        $forum->duedate = 0;
+        $forum->duedateevent = 0;
+
+        if ($oldforum->duedateevent != 0) {
+            $event = \calendar_event::load($oldforum->duedateevent);
+            $event->delete();
+        }
+    }
 
     // MDL-3942 - if the aggregation type or scale (i.e. max grade) changes then recalculate the grades for the entire forum
     // if  scale changes - do we need to recheck the ratings, if ratings higher than scale how do we want to respond?
@@ -265,6 +324,12 @@ function forum_delete_instance($id) {
     }
     if (!$course = $DB->get_record('course', array('id'=>$cm->course))) {
         return false;
+    }
+
+    // If there is a due date event, delete it now
+    if ($forum->duedateevent != 0) {
+        $event = \calendar_event::load($forum->duedateevent);
+        $event->delete();
     }
 
     $context = context_module::instance($cm->id);
