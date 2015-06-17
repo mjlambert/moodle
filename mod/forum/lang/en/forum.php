@@ -155,7 +155,6 @@ $string['displaystart_help'] = 'This setting specifies whether a forum post shou
 $string['displaywordcount'] = 'Display word count';
 $string['displaywordcount_help'] = 'This setting specifies whether the word count of each post should be displayed or not.';
 $string['duedate'] = 'Due date';
-$string['duedateenable'] = 'Enable due date';
 $string['duedatetodisplayincalendar'] = 'Due date to display in calendar';
 $string['eachuserforum'] = 'Each person posts one discussion';
 $string['edit'] = 'Edit';

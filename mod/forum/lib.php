@@ -92,7 +92,7 @@ function forum_add_instance($forum, $mform = null) {
     }
 
     // If due date is enabled, create a calendar event for it.
-    if ($forum->duedateenabled) {
+    if ($forum->duedate) {
 
         $event                  = new stdClass();
         $event->name            = $forum->name;
@@ -190,7 +190,7 @@ function forum_update_instance($forum, $mform) {
 
     $oldforum = $DB->get_record('forum', array('id'=>$forum->id));
 
-    if ($forum->duedateenabled) {
+    if ($forum->duedate) {
         // If we already have an event for the due date, update it.
         if ($oldforum->duedateevent != 0) {
             $event = \calendar_event::load($oldforum->duedateevent);
