@@ -91,7 +91,7 @@ function forum_add_instance($forum, $mform = null) {
         $forum->assesstimefinish = 0;
     }
 
-    // If due date is enabled, create a calendar event for it
+    // If due date is enabled, create a calendar event for it.
     if ($forum->duedateenabled) {
 
         $event                  = new stdClass();
@@ -106,9 +106,9 @@ function forum_add_instance($forum, $mform = null) {
         $event->repeats         = 0;
         $event->eventtype       = 'course';
 
-        $new_event = \calendar_event::create($event);
-        if ($new_event) {
-            $forum->duedateevent = $new_event->id;
+        $newevent = \calendar_event::create($event);
+        if ($newevent) {
+            $forum->duedateevent = $newevent->id;
         }
     }
 
@@ -191,13 +191,12 @@ function forum_update_instance($forum, $mform) {
     $oldforum = $DB->get_record('forum', array('id'=>$forum->id));
 
     if ($forum->duedateenabled) {
-        // If we already have an event for the due date, update it
+        // If we already have an event for the due date, update it.
         if ($oldforum->duedateevent != 0) {
             $event = \calendar_event::load($oldforum->duedateevent);
             $event->update(array('timestart' => $forum->duedate));
-        }
-        // If we don't have an event for the due date, create one
-        else {
+        } else {
+            // If we don't have an event for the due date, create one.
             $event                  = new stdClass();
             $event->name            = $forum->name;
             $event->courseid        = $forum->course;
@@ -210,14 +209,13 @@ function forum_update_instance($forum, $mform) {
             $event->repeats         = 0;
             $event->eventtype       = 'course';
     
-            $new_event = \calendar_event::create($event);
-            if ($new_event) {
-                $forum->duedateevent = $new_event->id;
+            $newevent = \calendar_event::create($event);
+            if ($newevent) {
+                $forum->duedateevent = $newevent->id;
             }
         }
-    }
-    // If due date is not enabled and we have an event for it, delete the event
-    else {
+    } else {
+        // If due date is not enabled and we have an event for it, delete the event.
         $forum->duedate = 0;
         $forum->duedateevent = 0;
 
@@ -326,7 +324,7 @@ function forum_delete_instance($id) {
         return false;
     }
 
-    // If there is a due date event, delete it now
+    // If there is a due date event, delete it now.
     if ($forum->duedateevent != 0) {
         $event = \calendar_event::load($forum->duedateevent);
         $event->delete();

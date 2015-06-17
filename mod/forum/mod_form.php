@@ -184,7 +184,6 @@ class mod_forum_mod_form extends moodleform_mod {
 
         $this->standard_coursemodule_elements();
 
-//-------------------------------------------------------------------------------
         $mform->addElement('header', 'duedateheader', get_string('duedate', 'forum'));
         $mform->addElement('advcheckbox', 'duedateenabled', get_string('duedateenable', 'forum'));
         $mform->addElement('date_selector', 'duedate', get_string('duedatetodisplayincalendar', 'forum'));
