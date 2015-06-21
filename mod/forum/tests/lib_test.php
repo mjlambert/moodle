@@ -42,6 +42,8 @@ class mod_forum_lib_testcase extends advanced_testcase {
     }
 
     public function test_forum_duedate_event() {
+        global $DB;
+
         $this->resetAfterTest();
 
         $user = $this->getDataGenerator()->create_user();
@@ -49,12 +51,53 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $this->setAdminUser();
 
         $timestamp = time();
-        $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id, 'duedate' => $timestamp));
-        $context = context_module::instance($forum->cmid);
 
+        // Creation Test
+        // Creat a forum with a due date and confirm an event is created with that date.
+        $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id, 'duedate' => $timestamp));
+
+        // Assert event was created and starts at the same time as the timestamp.
         $event = \calendar_event::load($forum->duedateevent);        
         $this->assertEquals($forum->duedateevent, $event->id);
         $this->assertEquals($timestamp, $event->timestart);
+
+        // Update Test
+        // Alter the timestamp, change the forums due date and confirm that the due date
+        // event has been updated too.
+        $timestamp += 86400;
+        $forum->duedate = $timestamp;
+        $newforum = clone $forum;
+        $oldeventid = $event->id;
+        $oldforumid = $forum->id;
+
+        // Update the forums due date.
+        forum_update_duedate($newforum, $forum);
+        $DB->update_record('forum', $newforum);
+
+        // Reload the forum.
+        $forum = $DB->get_record('forum', array('id' => $oldforumid));
+
+        // Reload the event.
+        $event = \calendar_event::load($forum->duedateevent);
+        $this->assertEquals($forum->duedateevent, $event->id);
+
+        // Assert events id has not changed.
+        $this->assertEquals($event->id, $oldeventid);
+
+        // Assert events start time has been updated to the new timestamp.
+        $this->assertEquals($timestamp, $event->timestart);
+
+        // Delete Test
+        // Delete the forum and confirm that the due date event has been deleted too.
+        $forumduedateevent = $forum->duedateevent;
+        forum_delete_instance($forum->id);
+
+        // Assert true if event cannot be found.
+        try {
+            $event = \calendar_event::load($forumduedateevent);
+        } catch(dml_missing_record_exception $e) {
+            $this->assertTrue(true);
+        }
     }
 
     public function test_forum_trigger_content_uploaded_event() {
