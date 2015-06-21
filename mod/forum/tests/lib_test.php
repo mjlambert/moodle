@@ -41,6 +41,22 @@ class mod_forum_lib_testcase extends advanced_testcase {
         \mod_forum\subscriptions::reset_forum_cache();
     }
 
+    public function test_forum_duedate_event() {
+        $this->resetAfterTest();
+
+        $user = $this->getDataGenerator()->create_user();
+        $course = $this->getDataGenerator()->create_course();
+        $this->setAdminUser();
+
+        $timestamp = time();
+        $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id, 'duedate' => $timestamp));
+        $context = context_module::instance($forum->cmid);
+
+        $event = \calendar_event::load($forum->duedateevent);        
+        $this->assertEquals($forum->duedateevent, $event->id);
+        $this->assertEquals($timestamp, $event->timestart);
+    }
+
     public function test_forum_trigger_content_uploaded_event() {
         $this->resetAfterTest();
 
