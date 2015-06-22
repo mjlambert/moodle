@@ -93,23 +93,7 @@ function forum_add_instance($forum, $mform = null) {
 
     // If due date is enabled, create a calendar event for it.
     if (property_exists($forum, 'duedate')) {
-
-        $event                  = new stdClass();
-        $event->name            = $forum->name;
-        $event->courseid        = $forum->course;
-        $event->groupid         = 0;
-        $event->userid          = -1;
-        $event->timestart       = $forum->duedate;
-        $event->description     = $forum->intro;
-        $event->timeduration    = 0;
-        $event->repeat          = 0;
-        $event->repeats         = 0;
-        $event->eventtype       = 'course';
-
-        $newevent = \calendar_event::create($event);
-        if ($newevent) {
-            $forum->duedateevent = $newevent->id;
-        }
+        forum_create_duedate($forum);
     }
 
     $forum->id = $DB->insert_record('forum', $forum);
@@ -189,7 +173,13 @@ function forum_update_instance($forum, $mform) {
     }
 
     $oldforum = $DB->get_record('forum', array('id'=>$forum->id));
-    forum_update_duedate($forum, $oldforum);
+    $duedateeventid;
+    if ($oldforum->duedateevent != 0) {
+        $duedateeventid = $oldforum->duedateevent;
+    } else {
+        $duedateeventid = 0;
+    }
+    forum_update_duedate($forum, $duedateeventid);
 
     // MDL-3942 - if the aggregation type or scale (i.e. max grade) changes then recalculate the grades for the entire forum
     // if  scale changes - do we need to recheck the ratings, if ratings higher than scale how do we want to respond?
@@ -268,53 +258,6 @@ function forum_update_instance($forum, $mform) {
 }
 
 /**
- * This function will update the due date event
- * by either removing it or by updating the date.
- *
- * @param object $forum forum instance
- * @param object $oldforum old forum instance
- * @return bool true
- */
-function forum_update_duedate(&$forum, &$oldforum) {
-    if (property_exists($forum, 'duedate')) {
-        // If we already have an event for the due date, update it.
-        if ($oldforum->duedateevent != 0) {
-            $event = \calendar_event::load($oldforum->duedateevent);
-            $event->update(array('timestart' => $forum->duedate));
-        } else {
-            // If we don't have an event for the due date, create one.
-            $event                  = new stdClass();
-            $event->name            = $forum->name;
-            $event->courseid        = $forum->course;
-            $event->groupid         = 0;
-            $event->userid          = -1;
-            $event->timestart       = $forum->duedate;
-            $event->description     = $forum->intro;
-            $event->timeduration    = 0;
-            $event->repeat          = 0;
-            $event->repeats         = 0;
-            $event->eventtype       = 'course';
-
-            $newevent = \calendar_event::create($event);
-            if ($newevent) {
-                $forum->duedateevent = $newevent->id;
-            }
-        }
-    } else {
-        // If due date is not enabled and we have an event for it, delete the event.
-        $forum->duedate = 0;
-        $forum->duedateevent = 0;
-
-        if ($oldforum->duedateevent != 0) {
-            $event = \calendar_event::load($oldforum->duedateevent);
-            $event->delete();
-        }
-    }
-
-    return true;
-}
-
-/**
  * Given an ID of an instance of this module,
  * this function will permanently delete the instance
  * and any data that depends on it.
@@ -338,8 +281,7 @@ function forum_delete_instance($id) {
 
     // If there is a due date event, delete it now.
     if ($forum->duedateevent != 0) {
-        $event = \calendar_event::load($forum->duedateevent);
-        $event->delete();
+        forum_delete_duedate($forum, $forum->duedateevent);
     }
 
     $context = context_module::instance($cm->id);
@@ -374,6 +316,75 @@ function forum_delete_instance($id) {
     return $result;
 }
 
+/**
+ * Create a new due date event.
+ *
+ * @param object $forum forum instance
+ * @return object $newevent new due date event
+ */
+function forum_create_duedate(&$forum) {
+    $event                  = new stdClass();
+    $event->name            = $forum->name;
+    $event->courseid        = $forum->course;
+    $event->groupid         = 0;
+    $event->userid          = -1;
+    $event->timestart       = $forum->duedate;
+    $event->description     = $forum->intro;
+    $event->timeduration    = 0;
+    $event->repeat          = 0;
+    $event->repeats         = 0;
+    $event->eventtype       = 'course';
+
+    $newevent = \calendar_event::create($event);
+    if ($newevent) {
+        $forum->duedateevent = $newevent->id;
+    }
+
+    return $newevent;
+}
+
+/**
+ * This function will update the due date event
+ * by either removing it or by updating the date.
+ *
+ * @param object $forum forum instance
+ * @param int $duedateeventid due date event id
+ * @return bool true
+ */
+function forum_update_duedate(&$forum, $duedateeventid = 0) {
+    if (property_exists($forum, 'duedate')) {
+        // If we already have an event for the due date, update it.
+        if ($duedateeventid != 0) {
+            $event = \calendar_event::load($duedateeventid);
+            $event->update(array('timestart' => $forum->duedate));
+        } else {
+            // If we don't have an event for the due date, create one.
+            forum_create_duedate($forum);
+        }
+    } else {
+        // If due date is not enabled and we have an event for it, delete the event.
+        forum_delete_duedate($forum, $duedateeventid);
+    }
+
+    return true;
+}
+
+/**
+ * Delete the due date event from the id provided.
+ *
+ * @param object $forum forum instance
+ * @param int $duedateeventid due date event id
+ * @return void
+ */
+function forum_delete_duedate(&$forum, $duedateeventid) {
+    $forum->duedate = 0;
+    $forum->duedateevent = 0;
+
+    if ($duedateeventid != 0) {
+        $event = \calendar_event::load($duedateeventid);
+        $event->delete();
+    }
+}
 
 /**
  * Indicates API features that the forum supports.

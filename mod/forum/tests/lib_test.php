@@ -71,7 +71,7 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $oldforumid = $forum->id;
 
         // Update the forums due date.
-        forum_update_duedate($newforum, $forum);
+        forum_update_duedate($newforum, $forum->duedateevent);
         $DB->update_record('forum', $newforum);
 
         // Reload the forum.
