@@ -271,8 +271,8 @@ function forum_update_instance($forum, $mform) {
  * This function will update the due date event
  * by either removing it or by updating the date.
  *
- * @param object &$forum forum instance
- * @param object &$oldforum old forum instance
+ * @param object $forum forum instance
+ * @param object $oldforum old forum instance
  * @return bool true
  */
 function forum_update_duedate(&$forum, &$oldforum) {
@@ -294,7 +294,7 @@ function forum_update_duedate(&$forum, &$oldforum) {
             $event->repeat          = 0;
             $event->repeats         = 0;
             $event->eventtype       = 'course';
-    
+
             $newevent = \calendar_event::create($event);
             if ($newevent) {
                 $forum->duedateevent = $newevent->id;

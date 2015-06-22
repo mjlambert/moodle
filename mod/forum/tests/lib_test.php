@@ -57,7 +57,7 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id, 'duedate' => $timestamp));
 
         // Assert event was created and starts at the same time as the timestamp.
-        $event = \calendar_event::load($forum->duedateevent);        
+        $event = \calendar_event::load($forum->duedateevent);
         $this->assertEquals($forum->duedateevent, $event->id);
         $this->assertEquals($timestamp, $event->timestart);
 
@@ -93,11 +93,13 @@ class mod_forum_lib_testcase extends advanced_testcase {
         forum_delete_instance($forum->id);
 
         // Assert true if event cannot be found.
+        $exceptionthrown = false;
         try {
             $event = \calendar_event::load($forumduedateevent);
-        } catch(dml_missing_record_exception $e) {
-            $this->assertTrue(true);
+        } catch (dml_missing_record_exception $e) {
+            $exceptionthrown = true;
         }
+        $this->assertEquals($exceptionthrown, true);
     }
 
     public function test_forum_trigger_content_uploaded_event() {
