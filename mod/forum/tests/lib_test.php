@@ -56,6 +56,9 @@ class mod_forum_lib_testcase extends advanced_testcase {
         // Creat a forum with a due date and confirm an event is created with that date.
         $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id, 'duedate' => $timestamp));
 
+        list($course, $cm) = get_course_and_cm_from_instance($forum, 'forum');
+        $forum->coursemodule = $cm->id;
+
         // Assert event was created and starts at the same time as the timestamp.
         $event = \calendar_event::load($forum->duedateevent);
         $this->assertEquals($forum->duedateevent, $event->id);
@@ -92,14 +95,10 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $forumduedateevent = $forum->duedateevent;
         forum_delete_instance($forum->id);
 
-        // Assert true if event cannot be found.
-        $exceptionthrown = false;
-        try {
-            $event = \calendar_event::load($forumduedateevent);
-        } catch (dml_missing_record_exception $e) {
-            $exceptionthrown = true;
-        }
-        $this->assertEquals($exceptionthrown, true);
+        $this->setExpectedException('dml_missing_record_exception',
+                                    'Can not find data record in database table event. (SELECT * FROM {event} WHERE id = ?'
+                                    . "\n" . '[array (' . "\n" . '  0 => ' . $forumduedateevent. ',' . "\n" . ')])');
+        $event = \calendar_event::load($forumduedateevent);
     }
 
     public function test_forum_trigger_content_uploaded_event() {

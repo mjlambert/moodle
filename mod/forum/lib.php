@@ -91,8 +91,12 @@ function forum_add_instance($forum, $mform = null) {
         $forum->assesstimefinish = 0;
     }
 
+    // If due date is enabled, create a calendar event for it.
+    if (property_exists($forum, 'duedate')) {
+        forum_create_duedate($forum);
+    }
+
     $forum->id = $DB->insert_record('forum', $forum);
-    forum_update_duedate($forum);
     $modcontext = context_module::instance($forum->coursemodule);
 
     if ($forum->type == 'single') {  // Create related discussion.
@@ -313,25 +317,33 @@ function forum_delete_instance($id) {
 }
 
 /**
+ * Creates a description for the due date event
+ * that includes a link to the forum.
+ *
+ * @param object $forum forum instance
+ * @return string $eventdescription event description
+ */
+function create_duedate_description($forum) {
+    $forumurl = new moodle_url('/mod/forum/view.php', array('id' => $forum->coursemodule));
+    $eventdescription = "<a href=\"" .$forumurl . "\">" . $forum->name . "</a> " . $forum->intro;
+
+    return $eventdescription;
+}
+
+/**
  * Create a new due date event.
  *
  * @param object $forum forum instance
  * @return object $newevent new due date event
  */
 function forum_create_duedate(&$forum) {
-    global $DB;
-
-    list($course, $cm) = get_course_and_cm_from_instance($forum, 'forum');
-    $forumurl = new moodle_url('/mod/forum/view.php', array('id' => $cm));
-    $eventdescription = "<a href=\"" .$forumurl . "\">" . $forum->name . "</a> " . $forum->intro;
-
     $event                  = new stdClass();
     $event->name            = $forum->name;
     $event->courseid        = $forum->course;
     $event->groupid         = 0;
     $event->userid          = -1;
     $event->timestart       = $forum->duedate;
-    $event->description     = $eventdescription;
+    $event->description     = create_duedate_description($forum);
     $event->timeduration    = 0;
     $event->repeat          = 0;
     $event->repeats         = 0;
@@ -340,7 +352,6 @@ function forum_create_duedate(&$forum) {
     $newevent = \calendar_event::create($event);
     if ($newevent) {
         $forum->duedateevent = $newevent->id;
-        $DB->insert_record('forum', $forum);
     }
 
     return $newevent;
@@ -359,8 +370,9 @@ function forum_update_duedate(&$forum, $duedateeventid = 0) {
         // If we already have an event for the due date, update it.
         if ($duedateeventid != 0) {
             $event = \calendar_event::load($duedateeventid);
-            $event->update(array('timestart' => $forum->duedate,
-                                  'name' => $forum->name));
+            $event->update(array('timestart'    => $forum->duedate,
+                                 'name'         => $forum->name,
+                                 'description'  => create_duedate_description($forum)));
         } else {
             // If we don't have an event for the due date, create one.
             forum_create_duedate($forum);
