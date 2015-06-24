@@ -182,12 +182,12 @@ class mod_forum_mod_form extends moodleform_mod {
 
         $this->standard_grading_coursemodule_elements();
 
-        $this->standard_coursemodule_elements();
-
         $mform->addElement('header', 'duedateheader', get_string('duedate', 'forum'));
         $mform->addElement('date_time_selector',
                            'duedate', get_string('duedatetodisplayincalendar', 'forum'),
                            array('optional' => true));
+
+        $this->standard_coursemodule_elements();
 
 //-------------------------------------------------------------------------------
 // buttons
