@@ -234,8 +234,29 @@ function updateUserSummary() {
         }
     }
 
-    if (selectCnt == 1 && userSummaries[selectIdx]) {
-        summaryDiv.innerHTML = userSummaries[selectIdx];
+    if (selectCnt == 1) {
+        var selectedUserId = Number(selectEl.options[selectIdx].value);
+
+        // If summary is in cache get it from there, else request it over ajax.
+        if (userSummaries[selectedUserId]) {
+            summaryDiv.innerHTML = userSummaries[selectedUserId];
+        } else {
+        
+            require(['core/ajax'], function(ajax) {
+
+                var promises = ajax.call([
+                    { methodname: 'core_group_get_user_summary', args: { courseid, courseid, userid: selectedUserId } }
+                ]);
+
+                promises[0].done(function(response) {
+                    userSummaries[selectedUserId] = response.summary;
+                    summaryDiv.innerHTML = response.summary;
+                }).fail(function(ex) {
+                    console.log(ex); // TODO How to handle exceptions?
+                });
+            
+            });
+        }
     } else {
         summaryDiv.innerHTML = '';
     }
