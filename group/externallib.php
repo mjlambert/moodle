@@ -37,6 +37,82 @@ require_once("$CFG->libdir/externallib.php");
  */
 class core_group_external extends external_api {
 
+
+    /**
+     * Get User Summary
+     *
+     * @param int courseid Course id
+     * @param int courseid User id
+     * @return array containing user summary HTML
+     */
+    public static function get_user_summary($courseid, $userid) {
+        global $DB;
+
+        $usersummaries = array();
+
+        // Get other groups user already belongs to.
+        $usergroups = array();
+        $sql = "SELECT u.id AS userid, g.*
+            FROM {user} u
+            JOIN {groups_members} gm ON u.id = gm.userid
+            JOIN {groups} g ON gm.groupid = g.id
+            WHERE u.id = :userid AND g.courseid = :courseid ";
+        $params = array( 'courseid' => $courseid, 'userid' => $userid );
+        $rs = $DB->get_recordset_sql($sql, $params);
+        foreach ($rs as $usergroup) {
+            $usergroups[$usergroup->id] = $usergroup;
+        }
+        $rs->close();
+
+        if (count($usergroups) > 0) {
+            $usergrouplist = html_writer::start_tag('ul');
+            foreach ($usergroups as $groupitem) {
+                $usergrouplist .= html_writer::tag('li', format_string($groupitem->name));
+            }
+            $usergrouplist .= html_writer::end_tag('ul');
+        } else {
+            $usergrouplist = '';
+        }
+
+        return array('summary' => $usergrouplist);
+    }
+
+    /**
+     * Returns if method is allowed from ajax
+     *
+     * @return bool true
+     */
+    public static function get_user_summary_is_allowed_from_ajax() {
+        return true;
+    }
+
+    /**
+     * Returns description of method parameters
+     *
+     * @return external_function_parameters
+     */
+    public static function get_user_summary_parameters() {
+        return new external_function_parameters(
+            array(
+                'courseid' => new external_value(PARAM_INT, 'id of course'),
+                'userid' => new external_value(PARAM_INT, 'id of user'),
+            )
+        );
+    }
+
+    /**
+     * Returns description of method result value
+     *
+     * @return external_description
+     */
+    public static function get_user_summary_returns() {
+            new external_single_structure(
+                array(
+                    'summary' => new external_value(PARAM_RAW, 'group summary HTML'),
+                )
+            );
+    }
+
     /**
      * Returns description of method parameters
      *

@@ -314,6 +314,15 @@ $functions = array(
         'type'        => 'write',
     ),
 
+    'core_group_get_user_summary' => array(
+        'classname'     => 'core_group_external',
+        'methodname'    => 'get_user_summary',
+        'classpath'     => 'group/externallib.php',
+        'description'   => 'Returns a group summary for the specified user.',
+        'type'          => 'read',
+        'capabilities'  => 'moodle/course:managegroups',
+    ),
+
     'core_group_get_course_user_groups' => array(
         'classname'     => 'core_group_external',
         'methodname'    => 'get_course_user_groups',
