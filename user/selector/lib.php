@@ -835,11 +835,12 @@ class group_non_members_selector extends groups_user_selector_base {
                 } else {
                     $usergrouplist = '';
                 }
-                $usersummaries[] = $usergrouplist;
+                $usersummaries[$userid] = $usergrouplist;
             }
         }
 
         $PAGE->requires->data_for_js('userSummaries', $usersummaries);
+        $PAGE->requires->data_for_js('courseid', intval($courseid));
     }
 
     /**
